@@ -1,11 +1,7 @@
 package scimpatch
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 )
 
 // SCIM resource
@@ -22,32 +18,6 @@ func (r *Resource) GetId() string {
 
 func (r *Resource) GetData() Complex {
 	return r.Complex
-}
-
-func ParseResource(filePath string) (*Resource, error) {
-	path, err := filepath.Abs(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	fileBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
-	data := make(map[string]interface{}, 0)
-	err = json.Unmarshal(fileBytes, &data)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Resource{Complex(data)}, nil
 }
 
 // SCIM complex data structure, Not thread-safe

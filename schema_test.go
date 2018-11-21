@@ -1,21 +1,16 @@
 package scimpatch
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func TestParseSchema(t *testing.T) {
-	sch, err := ParseSchema("./resources/tests/user_schema.json")
-	assert.NotNil(t, sch)
-	assert.Nil(t, err)
-}
-
 func TestSchema_GetAttribute(t *testing.T) {
-	sch, err := ParseSchema("./resources/tests/user_schema.json")
-	require.NotNil(t, sch)
-	require.Nil(t, err)
+	schema := &Schema{}
+	err := json.Unmarshal([]byte(JsonUserSchema), &schema)
+	assert.Nil(t, err)
 
 	for _, test := range []struct {
 		pathText  string
@@ -73,6 +68,6 @@ func TestSchema_GetAttribute(t *testing.T) {
 	} {
 		p, err := NewPath(test.pathText)
 		require.Nil(t, err)
-		test.assertion(sch.GetAttribute(p, true))
+		test.assertion(schema.GetAttribute(p, true))
 	}
 }

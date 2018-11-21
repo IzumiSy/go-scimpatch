@@ -1,15 +1,16 @@
 package scimpatch
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
 )
 
 func TestApplyPatch(t *testing.T) {
-	sch, err := ParseSchema("./resources/tests/user_schema.json")
-	require.Nil(t, err)
+	schema := &Schema{}
+	err := json.Unmarshal([]byte(JsonUserSchema), &schema)
+	assert.Nil(t, err)
 
 	for _, test := range []struct {
 		patch     Patch
@@ -190,10 +191,12 @@ func TestApplyPatch(t *testing.T) {
 			},
 		},
 	} {
-		resource, err := ParseResource("./resources/tests/user.json")
-		require.Nil(t, err)
+		data := make(map[string]interface{}, 0)
+		err := json.Unmarshal([]byte(JsonUser), &data)
+		assert.Nil(t, err)
 
-		err = ApplyPatch(test.patch, resource, sch)
+		resource := &Resource{Complex(data)}
+		err = ApplyPatch(test.patch, resource, schema)
 		test.assertion(resource, err)
 	}
 }

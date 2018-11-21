@@ -1,23 +1,17 @@
 package scimpatch
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
 )
 
-func TestParseResource(t *testing.T) {
-	r, err := ParseResource("./resources/tests/user.json")
-	assert.Nil(t, err)
-	assert.NotNil(t, r)
-	assert.Equal(t, "6B69753B-4E38-444E-8AC6-9D0E4D644D80", r.Complex["id"])
-}
-
 func TestComplex_Set(t *testing.T) {
-	sch, err := ParseSchema("./resources/tests/user_schema.json")
-	require.NotNil(t, sch)
-	require.Nil(t, err)
+	schema := &Schema{}
+	err := json.Unmarshal([]byte(JsonUserSchema), &schema)
+	assert.Nil(t, err)
 
 	for _, test := range []struct {
 		complex   Complex
@@ -113,15 +107,15 @@ func TestComplex_Set(t *testing.T) {
 		p, err := NewPath(test.pathText)
 		require.Nil(t, err)
 
-		err = test.complex.Set(p, test.value, sch)
+		err = test.complex.Set(p, test.value, schema)
 		test.assertion(test.complex, err)
 	}
 }
 
 func TestComplex_Get(t *testing.T) {
-	sch, err := ParseSchema("./resources/tests/user_schema.json")
-	require.NotNil(t, sch)
-	require.Nil(t, err)
+	schema := &Schema{}
+	err := json.Unmarshal([]byte(JsonUserSchema), &schema)
+	assert.Nil(t, err)
 
 	for _, test := range []struct {
 		complex   Complex
@@ -242,6 +236,6 @@ func TestComplex_Get(t *testing.T) {
 	} {
 		p, err := NewPath(test.pathText)
 		require.Nil(t, err)
-		test.assertion(test.complex.Get(p, sch))
+		test.assertion(test.complex.Get(p, schema))
 	}
 }

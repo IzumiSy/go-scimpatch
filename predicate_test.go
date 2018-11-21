@@ -1,15 +1,16 @@
 package scimpatch
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestEvaluatePredicate(t *testing.T) {
-	sch, err := ParseSchema("./resources/tests/user_schema.json")
-	require.NotNil(t, sch)
-	require.Nil(t, err)
+	schema := &Schema{}
+	err := json.Unmarshal([]byte(JsonUserSchema), &schema)
+	assert.Nil(t, err)
 
 	for _, test := range []struct {
 		filterText string
@@ -61,7 +62,7 @@ func TestEvaluatePredicate(t *testing.T) {
 		require.Nil(t, err)
 		require.NotNil(t, filter)
 
-		result := newPredicate(filter, sch).evaluate(test.data)
+		result := newPredicate(filter, schema).evaluate(test.data)
 		assert.Equal(t, test.expect, result)
 	}
 }

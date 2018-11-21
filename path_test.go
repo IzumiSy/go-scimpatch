@@ -1,6 +1,7 @@
 package scimpatch
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -327,9 +328,9 @@ func TestPath_SeparateAtLast(t *testing.T) {
 }
 
 func TestPath_CorrectCase(t *testing.T) {
-	sch, err := ParseSchema("./resources/tests/user_schema.json")
-	require.Nil(t, err)
-	require.NotNil(t, sch)
+	schema := &Schema{}
+	err := json.Unmarshal([]byte(JsonUserSchema), &schema)
+	assert.Nil(t, err)
 
 	for _, test := range []struct {
 		pathText  string
@@ -372,7 +373,7 @@ func TestPath_CorrectCase(t *testing.T) {
 	} {
 		p, err := NewPath(test.pathText)
 		require.Nil(t, err)
-		p.CorrectCase(sch, true)
+		p.CorrectCase(schema, true)
 		test.assertion(p)
 	}
 }
