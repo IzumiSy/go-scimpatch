@@ -1,39 +1,272 @@
 package scimpatch
 
 import (
+	"context"
 	"fmt"
-	"strings"
+	"reflect"
 )
 
-type Operation struct {
+type Modification struct {
+	Schemas []string `json:"schemas"`
+	Ops     []Patch  `json:"Operations"`
+}
+
+const (
+	Add     = "add"
+	Remove  = "remove"
+	Replace = "replace"
+)
+
+type Patch struct {
 	Op    string      `json:"op"`
 	Path  string      `json:"path"`
 	Value interface{} `json:"value"`
 }
 
-func NewPatch(operations []Operation) func(src interface{}) (interface{}, error) {
-	// Some SCIM clients such as AzureAD sends `op` as PascalCase so here changes them to lowercase
-	var _operations []Operation
-	copy(_operations, operations)
-	for _, op := range _operations {
-		op.Op = strings.ToLower(op.Op)
-	}
-
-	return func(src interface{}) (interface{}, error) {
-		for _, op := range _operations {
-			switch op.Op {
-			case "add":
-				fmt.Println("add")
-			case "remove":
-				fmt.Println("remove")
-			case "replace":
-				fmt.Println("replace")
+func ApplyPatch(patch Patch, subj *Resource, sch *Schema, ctx context.Context) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			switch r.(type) {
+			case error:
+				err = r.(error)
+			default:
+				err = fmt.Errorf("%v", r)
 			}
 		}
+	}()
 
-		//
-		// TODO
-		//
-		return fmt.Sprintf("%s", src), nil
+	ps := patchState{patch: patch, sch: sch, ctx: ctx}
+
+	var path Path
+	if len(patch.Path) == 0 {
+		path = nil
+	} else {
+		path, err = NewPath(patch.Path)
+		if err != nil {
+			return err
+		}
+		path.CorrectCase(sch, true)
+
+		if attr := sch.GetAttribute(path, true); attr != nil {
+			ps.destAttr = attr
+		} else {
+			return fmt.Errorf("No attribute found for path: %s", patch.Path)
+		}
+	}
+
+	v := reflect.ValueOf(patch.Value)
+	if v.Kind() == reflect.Interface {
+		v = v.Elem()
+	}
+
+	switch patch.Op {
+	case Add:
+		ps.applyPatchAdd(path, v, subj)
+	case Replace:
+		ps.applyPatchReplace(path, v, subj)
+	case Remove:
+		ps.applyPatchRemove(path, subj)
+	default:
+		err = fmt.Errorf("Invalid operator: %s", patch.Op)
+	}
+	return
+}
+
+type patchState struct {
+	patch    Patch
+	destAttr *Attribute
+	sch      *Schema
+	ctx      context.Context
+}
+
+func (ps *patchState) throw(err error, ctx context.Context) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (ps *patchState) applyPatchRemove(p Path, subj *Resource) {
+	basePath, lastPath := p.SeparateAtLast()
+	baseChannel := make(chan interface{}, 1)
+	if basePath == nil {
+		go func() {
+			baseChannel <- subj.Complex
+			close(baseChannel)
+		}()
+	} else {
+		baseChannel = subj.Get(basePath, ps.sch)
+	}
+
+	var baseAttr AttributeSource = ps.sch
+	if basePath != nil {
+		baseAttr = ps.sch.GetAttribute(basePath, true)
+	}
+
+	for base := range baseChannel {
+		baseVal := reflect.ValueOf(base)
+		if baseVal.IsNil() {
+			continue
+		}
+		if baseVal.Kind() == reflect.Interface {
+			baseVal = baseVal.Elem()
+		}
+
+		switch baseVal.Kind() {
+		case reflect.Map:
+			keyVal := reflect.ValueOf(lastPath.Base())
+			if ps.destAttr.MultiValued {
+				if lastPath.FilterRoot() == nil {
+					baseVal.SetMapIndex(keyVal, reflect.Value{})
+				} else {
+					origVal := baseVal.MapIndex(keyVal)
+					baseAttr = baseAttr.GetAttribute(lastPath, false)
+					reverseRoot := &filterNode{
+						data: Not,
+						typ:  LogicalOperator,
+						left: lastPath.FilterRoot().(*filterNode),
+					}
+					newElemChannel := MultiValued(origVal.Interface().([]interface{})).Filter(reverseRoot, baseAttr)
+					newArr := make([]interface{}, 0)
+					for newElem := range newElemChannel {
+						newArr = append(newArr, newElem)
+					}
+					if len(newArr) == 0 {
+						baseVal.SetMapIndex(keyVal, reflect.Value{})
+					} else {
+						baseVal.SetMapIndex(keyVal, reflect.ValueOf(newArr))
+					}
+				}
+			} else {
+				baseVal.SetMapIndex(keyVal, reflect.Value{})
+			}
+		case reflect.Array, reflect.Slice:
+			keyVal := reflect.ValueOf(lastPath.Base())
+			for i := 0; i < baseVal.Len(); i++ {
+				elemVal := baseVal.Index(i)
+				if elemVal.Kind() == reflect.Interface {
+					elemVal = elemVal.Elem()
+				}
+				switch elemVal.Kind() {
+				case reflect.Map:
+					elemVal.SetMapIndex(keyVal, reflect.Value{})
+				default:
+					ps.throw(fmt.Errorf("Array base contains non-map: %s", ps.patch.Path), ps.ctx)
+				}
+			}
+		default:
+			ps.throw(fmt.Errorf("Base evaluated to non-map and non-array: %s", ps.patch.Path), ps.ctx)
+		}
+	}
+}
+
+func (ps *patchState) applyPatchReplace(p Path, v reflect.Value, subj *Resource) {
+	basePath, lastPath := p.SeparateAtLast()
+	baseChannel := make(chan interface{}, 1)
+	if basePath == nil {
+		go func() {
+			baseChannel <- subj.Complex
+			close(baseChannel)
+		}()
+	} else {
+		baseChannel = subj.Get(basePath, ps.sch)
+	}
+
+	for base := range baseChannel {
+		baseVal := reflect.ValueOf(base)
+		if baseVal.IsNil() {
+			continue
+		}
+		if baseVal.Kind() == reflect.Interface {
+			baseVal = baseVal.Elem()
+		}
+		baseVal.SetMapIndex(reflect.ValueOf(lastPath.Base()), v)
+	}
+}
+
+func (ps *patchState) applyPatchAdd(p Path, v reflect.Value, subj *Resource) {
+	if p == nil {
+		if v.Kind() != reflect.Map {
+			ps.throw(fmt.Errorf("Invalid parameter for add operation"), ps.ctx)
+		}
+		for _, k := range v.MapKeys() {
+			v0 := v.MapIndex(k)
+			if err := ApplyPatch(Patch{
+				Op:    Add,
+				Path:  k.String(),
+				Value: v0.Interface(),
+			}, subj, ps.sch, ps.ctx); err != nil {
+				ps.throw(err, ps.ctx)
+			}
+		}
+	} else {
+		basePath, lastPath := p.SeparateAtLast()
+		baseChannel := make(chan interface{}, 1)
+
+		if basePath == nil {
+			go func() {
+				baseChannel <- subj.Complex
+				close(baseChannel)
+			}()
+		} else {
+			baseChannel = subj.Get(basePath, ps.sch)
+		}
+
+		for base := range baseChannel {
+			baseVal := reflect.ValueOf(base)
+			if baseVal.IsNil() {
+				continue
+			}
+			if baseVal.Kind() == reflect.Interface {
+				baseVal = baseVal.Elem()
+			}
+
+			switch baseVal.Kind() {
+			case reflect.Map:
+				keyVal := reflect.ValueOf(lastPath.Base())
+				if ps.destAttr.MultiValued {
+					origVal := baseVal.MapIndex(keyVal)
+					if !origVal.IsValid() {
+						switch v.Kind() {
+						case reflect.Array, reflect.Slice:
+							baseVal.SetMapIndex(keyVal, v)
+						default:
+							baseVal.SetMapIndex(keyVal, reflect.ValueOf([]interface{}{v.Interface()}))
+						}
+
+					} else {
+						if origVal.Kind() == reflect.Interface {
+							origVal = origVal.Elem()
+						}
+						var newArr MultiValued
+						switch v.Kind() {
+						case reflect.Array, reflect.Slice:
+							for i := 0; i < v.Len(); i++ {
+								newArr = MultiValued(origVal.Interface().([]interface{})).Add(v.Index(i).Interface())
+							}
+						default:
+							newArr = MultiValued(origVal.Interface().([]interface{})).Add(v.Interface())
+						}
+						baseVal.SetMapIndex(keyVal, reflect.ValueOf(newArr))
+					}
+				} else {
+					baseVal.SetMapIndex(keyVal, v)
+				}
+			case reflect.Array, reflect.Slice:
+				for i := 0; i < baseVal.Len(); i++ {
+					elemVal := baseVal.Index(i)
+					if elemVal.Kind() == reflect.Interface {
+						elemVal = elemVal.Elem()
+					}
+					switch elemVal.Kind() {
+					case reflect.Map:
+						elemVal.SetMapIndex(reflect.ValueOf(lastPath.Base()), v)
+					default:
+						ps.throw(fmt.Errorf("Array base contains non-map: %s", ps.patch.Path), ps.ctx)
+					}
+				}
+			default:
+				ps.throw(fmt.Errorf("Base evaluated to non-map and non-array: %s", ps.patch.Path), ps.ctx)
+			}
+		}
 	}
 }
