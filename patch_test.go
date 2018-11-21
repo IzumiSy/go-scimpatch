@@ -9,7 +9,7 @@ import (
 
 func TestApplyPatch(t *testing.T) {
 	schema := &Schema{}
-	err := json.Unmarshal([]byte(JsonUserSchema), &schema)
+	err := json.Unmarshal([]byte(TestUserSchemaJson), &schema)
 	assert.Nil(t, err)
 
 	for _, test := range []struct {
@@ -192,7 +192,7 @@ func TestApplyPatch(t *testing.T) {
 		},
 	} {
 		data := make(map[string]interface{}, 0)
-		err := json.Unmarshal([]byte(JsonUser), &data)
+		err := json.Unmarshal([]byte(TestUserJson), &data)
 		assert.Nil(t, err)
 
 		resource := &Resource{Complex(data)}

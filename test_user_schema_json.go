@@ -1,6 +1,6 @@
 package scimpatch
 
-const JsonUserSchema = `
+const TestUserSchemaJson = `
 {
   "id" : "urn:ietf:params:scim:schemas:core:2.0:User",
   "name" : "User",
