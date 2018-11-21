@@ -191,11 +191,11 @@ func TestApplyPatch(t *testing.T) {
 			},
 		},
 	} {
-		r, err := ParseResource("./resources/tests/user.json")
+		resource, err := ParseResource("./resources/tests/user.json")
 		require.Nil(t, err)
 
 		ctx := context.Background()
-		err = ApplyPatch(test.patch, r, sch, ctx)
-		test.assertion(r, err)
+		err = ApplyPatch(test.patch, resource, sch, ctx)
+		test.assertion(resource, err)
 	}
 }
