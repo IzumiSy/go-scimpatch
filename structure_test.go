@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseResource(t *testing.T) {
-	r, json, err := ParseResource("./resources/tests/user_1.json")
+	r, json, err := ParseResource("./resources/tests/user.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
 	assert.NotEmpty(t, json)
