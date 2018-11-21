@@ -1,7 +1,6 @@
 package scimpatch
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 )
@@ -23,7 +22,7 @@ type Patch struct {
 	Value interface{} `json:"value"`
 }
 
-func ApplyPatch(patch Patch, subj *Resource, sch *Schema, ctx context.Context) (err error) {
+func ApplyPatch(patch Patch, subj *Resource, sch *Schema) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			switch r.(type) {
@@ -35,7 +34,7 @@ func ApplyPatch(patch Patch, subj *Resource, sch *Schema, ctx context.Context) (
 		}
 	}()
 
-	ps := patchState{patch: patch, sch: sch, ctx: ctx}
+	ps := patchState{patch: patch, sch: sch}
 
 	var path Path
 	if len(patch.Path) == 0 {
@@ -76,10 +75,9 @@ type patchState struct {
 	patch    Patch
 	destAttr *Attribute
 	sch      *Schema
-	ctx      context.Context
 }
 
-func (ps *patchState) throw(err error, ctx context.Context) {
+func (ps *patchState) throw(err error) {
 	if err != nil {
 		panic(err)
 	}
@@ -150,11 +148,11 @@ func (ps *patchState) applyPatchRemove(p Path, subj *Resource) {
 				case reflect.Map:
 					elemVal.SetMapIndex(keyVal, reflect.Value{})
 				default:
-					ps.throw(fmt.Errorf("Array base contains non-map: %s", ps.patch.Path), ps.ctx)
+					ps.throw(fmt.Errorf("Array base contains non-map: %s", ps.patch.Path))
 				}
 			}
 		default:
-			ps.throw(fmt.Errorf("Base evaluated to non-map and non-array: %s", ps.patch.Path), ps.ctx)
+			ps.throw(fmt.Errorf("Base evaluated to non-map and non-array: %s", ps.patch.Path))
 		}
 	}
 }
@@ -186,16 +184,12 @@ func (ps *patchState) applyPatchReplace(p Path, v reflect.Value, subj *Resource)
 func (ps *patchState) applyPatchAdd(p Path, v reflect.Value, subj *Resource) {
 	if p == nil {
 		if v.Kind() != reflect.Map {
-			ps.throw(fmt.Errorf("Invalid parameter for add operation"), ps.ctx)
+			ps.throw(fmt.Errorf("Invalid parameter for add operation"))
 		}
 		for _, k := range v.MapKeys() {
 			v0 := v.MapIndex(k)
-			if err := ApplyPatch(Patch{
-				Op:    Add,
-				Path:  k.String(),
-				Value: v0.Interface(),
-			}, subj, ps.sch, ps.ctx); err != nil {
-				ps.throw(err, ps.ctx)
+			if err := ApplyPatch(Patch{Op: Add, Path: k.String(), Value: v0.Interface()}, subj, ps.sch); err != nil {
+				ps.throw(err)
 			}
 		}
 	} else {
@@ -261,11 +255,11 @@ func (ps *patchState) applyPatchAdd(p Path, v reflect.Value, subj *Resource) {
 					case reflect.Map:
 						elemVal.SetMapIndex(reflect.ValueOf(lastPath.Base()), v)
 					default:
-						ps.throw(fmt.Errorf("Array base contains non-map: %s", ps.patch.Path), ps.ctx)
+						ps.throw(fmt.Errorf("Array base contains non-map: %s", ps.patch.Path))
 					}
 				}
 			default:
-				ps.throw(fmt.Errorf("Base evaluated to non-map and non-array: %s", ps.patch.Path), ps.ctx)
+				ps.throw(fmt.Errorf("Base evaluated to non-map and non-array: %s", ps.patch.Path))
 			}
 		}
 	}

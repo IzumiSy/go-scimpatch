@@ -1,7 +1,6 @@
 package scimpatch
 
 import (
-	"context"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"reflect"
@@ -194,8 +193,7 @@ func TestApplyPatch(t *testing.T) {
 		resource, err := ParseResource("./resources/tests/user.json")
 		require.Nil(t, err)
 
-		ctx := context.Background()
-		err = ApplyPatch(test.patch, resource, sch, ctx)
+		err = ApplyPatch(test.patch, resource, sch)
 		test.assertion(resource, err)
 	}
 }
