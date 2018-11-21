@@ -191,7 +191,7 @@ func TestApplyPatch(t *testing.T) {
 			},
 		},
 	} {
-		r, _, err := ParseResource("./resources/tests/user.json")
+		r, err := ParseResource("./resources/tests/user.json")
 		require.Nil(t, err)
 
 		ctx := context.Background()

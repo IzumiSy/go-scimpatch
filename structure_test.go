@@ -8,10 +8,9 @@ import (
 )
 
 func TestParseResource(t *testing.T) {
-	r, json, err := ParseResource("./resources/tests/user.json")
+	r, err := ParseResource("./resources/tests/user.json")
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
-	assert.NotEmpty(t, json)
 	assert.Equal(t, "6B69753B-4E38-444E-8AC6-9D0E4D644D80", r.Complex["id"])
 }
 
