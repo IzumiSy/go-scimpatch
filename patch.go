@@ -5,11 +5,6 @@ import (
 	"reflect"
 )
 
-type Modification struct {
-	Schemas []string `json:"schemas"`
-	Ops     []Patch  `json:"Operations"`
-}
-
 const (
 	Add     = "add"
 	Remove  = "remove"
@@ -20,6 +15,51 @@ type Patch struct {
 	Op    string      `json:"op"`
 	Path  string      `json:"path"`
 	Value interface{} `json:"value"`
+}
+
+type Modification struct {
+	Schemas []string `json:"schemas"`
+	Ops     []Patch  `json:"Operations"`
+}
+
+func (m Modification) Validate() error {
+	if len(m.Schemas) != 1 && m.Schemas[0] != PatchOpUrn {
+		return fmt.Errorf("Invalid parameter: %+v", m.Schemas)
+	}
+
+	if len(m.Ops) == 0 {
+		return fmt.Errorf("Invalid parameter: no ops")
+	}
+
+	for _, patch := range m.Ops {
+		switch patch.Op {
+		case Add:
+			if patch.Value == nil {
+				return fmt.Errorf("Invalid parameter: value is not present")
+			} else if len(patch.Path) == 0 {
+				if _, ok := patch.Value.(map[string]interface{}); !ok {
+					return fmt.Errorf("Invalid parameter: path is not present")
+				}
+			}
+		case Replace:
+			if patch.Value == nil {
+				return fmt.Errorf("Invalid parameter: value is not present")
+			} else if len(patch.Path) == 0 {
+				return fmt.Errorf("Invalid parameter: path is not present")
+			}
+		case Remove:
+			if patch.Value != nil {
+				return fmt.Errorf("Invalid parameter: value is not present")
+			} else if len(patch.Path) == 0 {
+				return fmt.Errorf("Invalid parameter: path is not present")
+			}
+
+		default:
+			return fmt.Errorf("Invalid operation: must be one of [add|remove|replace]")
+		}
+	}
+
+	return nil
 }
 
 func ApplyPatch(patch Patch, subj *Resource, sch *Schema) (err error) {
