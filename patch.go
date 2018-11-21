@@ -3,6 +3,7 @@ package scimpatch
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 const (
@@ -98,7 +99,8 @@ func ApplyPatch(patch Patch, subj *Resource, sch *Schema) (err error) {
 		v = v.Elem()
 	}
 
-	switch patch.Op {
+	// Some SCIM clients such as AzureAD send `op` as PascalCase so here changes it back to lowercase.
+	switch strings.ToLower(patch.Op) {
 	case Add:
 		ps.applyPatchAdd(path, v, subj)
 	case Replace:
