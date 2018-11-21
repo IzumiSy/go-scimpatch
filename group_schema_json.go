@@ -1,3 +1,6 @@
+package scimpatch
+
+const GroupSchemaJson = `
 {
   "id" : "urn:ietf:params:scim:schemas:core:2.0:Group",
   "name" : "Group",
@@ -289,3 +292,4 @@
     "location" : "/v2/Schemas/urn:ietf:params:scim:schemas:core:2.0:Group"
   }
 }
+`

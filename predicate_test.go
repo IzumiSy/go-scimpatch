@@ -9,7 +9,7 @@ import (
 
 func TestEvaluatePredicate(t *testing.T) {
 	schema := &Schema{}
-	err := json.Unmarshal([]byte(TestUserSchemaJson), &schema)
+	err := json.Unmarshal([]byte(UserSchemaJson), &schema)
 	assert.Nil(t, err)
 
 	for _, test := range []struct {
