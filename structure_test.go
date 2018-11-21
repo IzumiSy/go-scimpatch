@@ -16,7 +16,7 @@ func TestParseResource(t *testing.T) {
 }
 
 func TestComplex_Set(t *testing.T) {
-	sch, _, err := ParseSchema("./resources/tests/user_schema.json")
+	sch, err := ParseSchema("./resources/tests/user_schema.json")
 	require.NotNil(t, sch)
 	require.Nil(t, err)
 
@@ -120,7 +120,7 @@ func TestComplex_Set(t *testing.T) {
 }
 
 func TestComplex_Get(t *testing.T) {
-	sch, _, err := ParseSchema("./resources/tests/user_schema.json")
+	sch, err := ParseSchema("./resources/tests/user_schema.json")
 	require.NotNil(t, sch)
 	require.Nil(t, err)
 

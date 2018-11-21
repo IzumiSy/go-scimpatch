@@ -7,7 +7,7 @@ import (
 )
 
 func TestEvaluatePredicate(t *testing.T) {
-	sch, _, err := ParseSchema("./resources/tests/user_schema.json")
+	sch, err := ParseSchema("./resources/tests/user_schema.json")
 	require.NotNil(t, sch)
 	require.Nil(t, err)
 

@@ -327,7 +327,7 @@ func TestPath_SeparateAtLast(t *testing.T) {
 }
 
 func TestPath_CorrectCase(t *testing.T) {
-	sch, _, err := ParseSchema("./resources/tests/user_schema.json")
+	sch, err := ParseSchema("./resources/tests/user_schema.json")
 	require.Nil(t, err)
 	require.NotNil(t, sch)
 

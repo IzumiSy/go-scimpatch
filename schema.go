@@ -10,30 +10,30 @@ import (
 	"strings"
 )
 
-func ParseSchema(filePath string) (*Schema, string, error) {
+func ParseSchema(filePath string) (*Schema, error) {
 	path, err := filepath.Abs(filePath)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	defer file.Close()
 
 	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	schema := &Schema{}
 	err = json.Unmarshal(fileBytes, &schema)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
-	return schema, string(fileBytes), nil
+	return schema, nil
 }
 
 type AttributeSource interface {

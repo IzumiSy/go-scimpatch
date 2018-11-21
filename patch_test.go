@@ -9,7 +9,7 @@ import (
 )
 
 func TestApplyPatch(t *testing.T) {
-	sch, _, err := ParseSchema("./resources/tests/user_schema.json")
+	sch, err := ParseSchema("./resources/tests/user_schema.json")
 	require.Nil(t, err)
 
 	for _, test := range []struct {

@@ -7,14 +7,13 @@ import (
 )
 
 func TestParseSchema(t *testing.T) {
-	sch, json, err := ParseSchema("./resources/tests/user_schema.json")
+	sch, err := ParseSchema("./resources/tests/user_schema.json")
 	assert.NotNil(t, sch)
-	assert.NotEmpty(t, json)
 	assert.Nil(t, err)
 }
 
 func TestSchema_GetAttribute(t *testing.T) {
-	sch, _, err := ParseSchema("./resources/tests/user_schema.json")
+	sch, err := ParseSchema("./resources/tests/user_schema.json")
 	require.NotNil(t, sch)
 	require.Nil(t, err)
 
