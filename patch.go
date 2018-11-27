@@ -33,7 +33,7 @@ func (m Modification) Validate() error {
 	}
 
 	for _, patch := range m.Ops {
-		switch patch.Op {
+		switch strings.ToLower(patch.Op) {
 		case Add:
 			if patch.Value == nil {
 				return fmt.Errorf("Invalid parameter: value is not present")
