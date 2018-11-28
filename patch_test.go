@@ -40,7 +40,6 @@ func TestApplyPatch(t *testing.T) {
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
 				assert.Equal(t, "hoge太郎", r.GetData()["displayName"])
-				// TODO
 			},
 		},
 		{
