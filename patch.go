@@ -122,16 +122,35 @@ func fixValueWithType(destAttr *Attribute, value reflect.Value) reflect.Value {
 	// ここでps.destAttrのチェックをしているのはimplicit pathというpathを直接指定せずにデータの追加をするためのテストケースがあるため
 	// 実際にはSCIMのRFCを読んでも規約としては存在していなさそうなので、path指定は必須項目としたいが一旦ここではnilチェックに留めておく。
 	if destAttr != nil {
-		if destAttr.Type == "string" && valueKind != reflect.String {
+		isValueAndTypeUnmatched :=
+			(destAttr.Type == "string" && valueKind != reflect.String) ||
+				(destAttr.Type == "boolean" && valueKind != reflect.Bool)
+
+		if isValueAndTypeUnmatched {
+			var v reflect.Value
+
+			// Mapであればそこからvalueフィールドを取り出す
+			// Slice/Arrayであればその先頭要素のオブジェクトからvalueフィールドを取り出す
 			switch valueKind {
 			case reflect.Map:
 				mapValue := value.Interface().(map[string]interface{})
-				return reflect.ValueOf(mapValue["value"])
+				v = reflect.ValueOf(mapValue["value"])
 			case reflect.Slice, reflect.Array:
 				arrayValue := value.Interface().([]interface{})
 				head := arrayValue[0].(map[string]interface{})
-				return reflect.ValueOf(head["value"])
+				v = reflect.ValueOf(head["value"])
 			}
+
+			// これもAzureADだがbooleanの値をPascalCaseで送ってくるためパースできない。
+			// なのでもしその文字列がTrue/Falseであればそれをbool値に変換する
+			switch v.Interface().(string) {
+			case "True":
+				v = reflect.ValueOf(true)
+			case "False":
+				v = reflect.ValueOf(false)
+			}
+
+			return v
 		}
 	}
 
