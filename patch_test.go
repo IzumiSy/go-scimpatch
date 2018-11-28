@@ -33,6 +33,17 @@ func TestApplyPatch(t *testing.T) {
 			},
 		},
 		{
+			// add: AzureAD style
+			Patch{Op: "Replace", Path: "displayName", Value: []interface{}{
+				map[string]interface{}{"$ref": "null", "value": "hoge太郎"},
+			}},
+			func(r *Resource, err error) {
+				assert.Nil(t, err)
+				assert.Equal(t, "hoge太郎", r.GetData()["displayName"])
+				// TODO
+			},
+		},
+		{
 			// add: implicit path
 			Patch{Op: Add, Path: "", Value: map[string]interface{}{"userName": "foo", "externalId": "bar"}},
 			func(r *Resource, err error) {

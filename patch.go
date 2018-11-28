@@ -99,18 +99,43 @@ func ApplyPatch(patch Patch, subj *Resource, sch *Schema) (err error) {
 		v = v.Elem()
 	}
 
-	// Some SCIM clients such as AzureAD send `op` as PascalCase so here changes it back to lowercase.
 	switch strings.ToLower(patch.Op) {
 	case Add:
-		ps.applyPatchAdd(path, v, subj)
+		ps.applyPatchAdd(path, fixValueWithType(ps.destAttr, v), subj)
 	case Replace:
-		ps.applyPatchReplace(path, v, subj)
+		ps.applyPatchReplace(path, fixValueWithType(ps.destAttr, v), subj)
 	case Remove:
 		ps.applyPatchRemove(path, subj)
 	default:
 		err = fmt.Errorf("Invalid operator: %s", patch.Op)
 	}
 	return
+}
+
+// [AzureAD対策]
+// 特定のSCIMクライアントがstring型のフィールドに対して配列値を送ってくることがある
+// なので、配列やオブジェクトが値として送られてきた場合にはここで取り出して単一値として与えたい。
+// 雑な実装として配列値が与えられた場合には必ず配列の先頭のオブジェクトから常にvalueフィールドを対象のデータとして取り出すことにする。
+func fixValueWithType(destAttr *Attribute, value reflect.Value) reflect.Value {
+	valueKind := value.Kind()
+
+	// ここでps.destAttrのチェックをしているのはimplicit pathというpathを直接指定せずにデータの追加をするためのテストケースがあるため
+	// 実際にはSCIMのRFCを読んでも規約としては存在していなさそうなので、path指定は必須項目としたいが一旦ここではnilチェックに留めておく。
+	if destAttr != nil {
+		if destAttr.Type == "string" && valueKind != reflect.String {
+			switch valueKind {
+			case reflect.Map:
+				mapValue := value.Interface().(map[string]interface{})
+				return reflect.ValueOf(mapValue["value"])
+			case reflect.Slice, reflect.Array:
+				arrayValue := value.Interface().([]interface{})
+				head := arrayValue[0].(map[string]interface{})
+				return reflect.ValueOf(head["value"])
+			}
+		}
+	}
+
+	return value
 }
 
 type patchState struct {
@@ -268,7 +293,6 @@ func (ps *patchState) applyPatchAdd(p Path, v reflect.Value, subj *Resource) {
 						default:
 							baseVal.SetMapIndex(keyVal, reflect.ValueOf([]interface{}{v.Interface()}))
 						}
-
 					} else {
 						if origVal.Kind() == reflect.Interface {
 							origVal = origVal.Elem()
