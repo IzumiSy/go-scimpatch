@@ -75,6 +75,23 @@ func TestApplyPatch(t *testing.T) {
 			},
 		},
 		{
+			// add: AzureAD style for multiValued
+			Patch{Op: "Add", Path: "emails", Value: []interface{}{
+				map[string]interface{}{"$ref": "null", "value": "foo@bar.com"},
+			}},
+			func(r *Resource, err error) {
+				assert.Nil(t, err)
+				emailsVal := reflect.ValueOf(r.GetData()["emails"])
+				if emailsVal.Kind() == reflect.Interface {
+					emailsVal = emailsVal.Elem()
+				}
+				assert.Equal(t, 3, emailsVal.Len())
+				assert.True(t, reflect.DeepEqual(emailsVal.Index(2).Interface(), map[string]interface{}{
+					"$ref": "null", "value": "foo@bar.com",
+				}))
+			},
+		},
+		{
 			// add : duplex multivalued
 			Patch{Op: Add, Path: "emails.value", Value: "foo@bar.com"},
 			func(r *Resource, err error) {
