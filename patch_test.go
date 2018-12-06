@@ -330,8 +330,8 @@ func TestApplyPatchGroup(t *testing.T) {
 				if membersVal.Kind() == reflect.Interface {
 					membersVal = membersVal.Elem()
 				}
-				assert.Equal(t, 2, membersVal.Len())
-				assert.True(t, reflect.DeepEqual(membersVal.Index(1).Interface(), map[string]interface{}{
+				assert.Equal(t, 3, membersVal.Len())
+				assert.True(t, reflect.DeepEqual(membersVal.Index(2).Interface(), map[string]interface{}{
 					"$ref": nil, "value": "added_group_id",
 				}))
 			},
@@ -366,7 +366,7 @@ func TestApplyPatchGroup(t *testing.T) {
 				if membersVal.Kind() == reflect.Interface {
 					membersVal = membersVal.Elem()
 				}
-				assert.Equal(t, 0, membersVal.Len())
+				assert.Equal(t, 1, membersVal.Len())
 			},
 		},
 	} {
@@ -376,7 +376,8 @@ func TestApplyPatchGroup(t *testing.T) {
 				"id": "e9e30dba-f08f-4109-8486-d5c6a331660a",
 				"displayName": "Tour Guides",
 				"members": [
-					{ "value": "deleting_group_id" }
+					{ "value": "deleting_group_id" },
+					{ "value": "staying_group_id" }
 				],
 				"meta": {
 					"resourceType": "Group",
