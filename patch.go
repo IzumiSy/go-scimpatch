@@ -115,10 +115,9 @@ func applyAzureADRemoveSupport(ps *patchState, path *Path) error {
 			if v.Kind() == reflect.Interface {
 				v = v.Elem()
 			}
-			valueKind := v.Kind()
 
 			var value reflect.Value
-			switch valueKind {
+			switch v.Kind() {
 			case reflect.Map:
 				mapValue := v.Interface().(map[string]interface{})
 				value = reflect.ValueOf(mapValue["value"])
