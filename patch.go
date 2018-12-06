@@ -50,7 +50,7 @@ func (m Modification) Validate() error {
 			}
 		case Remove:
 			if patch.Value != nil {
-				return fmt.Errorf("Invalid parameter: value is not present")
+				return fmt.Errorf("Invalid parameter: value must not be present")
 			} else if len(patch.Path) == 0 {
 				return fmt.Errorf("Invalid parameter: path is not present")
 			}
