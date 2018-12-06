@@ -49,9 +49,7 @@ func (m Modification) Validate() error {
 				return fmt.Errorf("Invalid parameter: path is not present")
 			}
 		case Remove:
-			if patch.Value != nil {
-				return fmt.Errorf("Invalid parameter: value must not be present")
-			} else if len(patch.Path) == 0 {
+			if len(patch.Path) == 0 {
 				return fmt.Errorf("Invalid parameter: path is not present")
 			}
 
@@ -63,7 +61,7 @@ func (m Modification) Validate() error {
 	return nil
 }
 
-func ApplyPatch(patch Patch, subj *Resource, sch *Schema) (err error) {
+func ApplyPatch(patch Patch, subj *Resource, schema *Schema) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			switch r.(type) {
@@ -75,28 +73,47 @@ func ApplyPatch(patch Patch, subj *Resource, sch *Schema) (err error) {
 		}
 	}()
 
-	ps := patchState{patch: patch, sch: sch}
-
-	var path Path
-	if len(patch.Path) == 0 {
-		path = nil
-	} else {
-		path, err = NewPath(patch.Path)
-		if err != nil {
-			return err
-		}
-		path.CorrectCase(sch, true)
-
-		if attr := sch.GetAttribute(path, true); attr != nil {
-			ps.destAttr = attr
-		} else {
-			return fmt.Errorf("No attribute found for path: %s", patch.Path)
-		}
+	err, psPtr, pathPtr := buildPatchState(patch, schema)
+	if err != nil {
+		return err
 	}
+
+	ps := *psPtr
+	path := *pathPtr
 
 	v := reflect.ValueOf(patch.Value)
 	if v.Kind() == reflect.Interface {
 		v = v.Elem()
+	}
+
+	// [AzureAD対策]
+	if ps.destAttr != nil {
+		if strings.ToLower(patch.Op) == "remove" && ps.destAttr.MultiValued && patch.Value != nil {
+			valueKind := v.Kind()
+
+			var value reflect.Value
+
+			switch valueKind {
+			case reflect.Map:
+				mapValue := v.Interface().(map[string]interface{})
+				value = reflect.ValueOf(mapValue["value"])
+			case reflect.Slice, reflect.Array:
+				arrayValue := v.Interface().([]interface{})
+				head := arrayValue[0].(map[string]interface{})
+				value = reflect.ValueOf(head["value"])
+			}
+
+			patch.Path = patch.Path + "[value eq \"" + value.String() + "\"]"
+
+			err, psPtr, pathPtr = buildPatchState(patch, schema)
+			if err != nil {
+				fmt.Println(err.Error())
+				return err
+			}
+
+			ps = *psPtr
+			path = *pathPtr
+		}
 	}
 
 	switch strings.ToLower(patch.Op) {
@@ -110,6 +127,31 @@ func ApplyPatch(patch Patch, subj *Resource, sch *Schema) (err error) {
 		err = fmt.Errorf("Invalid operator: %s", patch.Op)
 	}
 	return
+}
+
+func buildPatchState(patch Patch, schema *Schema) (error, *patchState, *Path) {
+	ps := patchState{patch: patch, sch: schema}
+
+	var err error
+	var path Path
+	if len(patch.Path) == 0 {
+		path = nil
+	} else {
+		path, err = NewPath(patch.Path)
+		if err != nil {
+			return err, nil, nil
+		}
+		fmt.Printf("%+v\n", path)
+		path.CorrectCase(schema, true)
+
+		if attr := schema.GetAttribute(path, true); attr != nil {
+			ps.destAttr = attr
+		} else {
+			return fmt.Errorf("No attribute found for path: %s", patch.Path), nil, nil
+		}
+	}
+
+	return nil, &ps, &path
 }
 
 // [AzureAD対策]
