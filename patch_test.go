@@ -330,19 +330,19 @@ func TestApplyPatchGroup(t *testing.T) {
 		{
 			func() Patch {
 				src := `
-					{
-						"schemas": [
-							"urn:ietf:params:scim:api:messages:2.0:PatchOp"
-						],
-						"Operations": [{
-							"op": "Add",
-							"path": "members", 
-							"value": [{
-								"$ref": null,
-								"value": "hogehoge_group_id"
-							}]
-						}]
-					}
+          {
+            "schemas": [
+              "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+            ],
+            "Operations": [{
+              "op": "Add",
+              "path": "members", 
+              "value": [{
+                "$ref": null,
+                "value": "hogehoge_group_id"
+              }]
+            }]
+          }
 				`
 
 				var mods Modification
@@ -378,9 +378,9 @@ func TestApplyPatchGroup(t *testing.T) {
 
 const TestGroupJson = `
 {
-	"schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
-	"id": "e9e30dba-f08f-4109-8486-d5c6a331660a",
-	"displayName": "Tour Guides",
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+  "id": "e9e30dba-f08f-4109-8486-d5c6a331660a",
+  "displayName": "Tour Guides",
   "meta": {
     "resourceType": "Group",
     "created": "2010-01-23T04:56:22Z",
