@@ -229,6 +229,55 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 	} {
+		const TestUserJson = `
+			{
+				"schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+				"id": "6B69753B-4E38-444E-8AC6-9D0E4D644D80",
+				"externalId": "996624032",
+				"userName": "david@example.com",
+				"name": {
+					"formatted": "David Qiu",
+					"familyName": "Qiu",
+					"givenName": "David",
+					"middleName": ""
+				},
+				"displayName": "David Qiu",
+				"nickName": "Q",
+				"profileUrl": "https://login.example.com/davidqiu",
+				"emails": [
+					{
+						"value": "david@example.com",
+						"type": "work",
+						"primary": true
+					},
+					{
+						"value": "david@home.com",
+						"type": "home"
+					}
+				],
+				"phoneNumbers": [
+					{
+						"value": "123-456-7890",
+						"type": "work"
+					}
+				],
+				"userType": "Employee",
+				"title": "Tour Guide",
+				"preferredLanguage": "en-US",
+				"locale": "en-US",
+				"timezone": "America/Los_Angeles",
+				"active":true,
+				"password": "t1meMa$heen",
+				"meta": {
+					"resourceType": "User",
+					"created": "2016-01-23T04:56:22Z",
+					"lastModified": "2016-05-13T04:42:34Z",
+					"version": "W\/\"a330bc54f0671c9\"",
+					"location": "https://example.com/v2/Users/6B69753B-4E38-444E-8AC6-9D0E4D644D80"
+				}
+			}
+		`
+
 		t.Run(test.name, func(t *testing.T) {
 			data := make(map[string]interface{}, 0)
 			err := json.Unmarshal([]byte(TestUserJson), &data)
@@ -240,85 +289,6 @@ func TestApplyPatchUsers(t *testing.T) {
 		})
 	}
 }
-
-const TestUserJson = `
-{
-  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
-  "id": "6B69753B-4E38-444E-8AC6-9D0E4D644D80",
-  "externalId": "996624032",
-  "userName": "david@example.com",
-  "name": {
-    "formatted": "David Qiu",
-    "familyName": "Qiu",
-    "givenName": "David",
-    "middleName": "",
-    "honorificPrefix": "Mr.",
-    "honorificSuffix": ""
-  },
-  "displayName": "David Qiu",
-  "nickName": "Q",
-  "profileUrl": "https://login.example.com/davidqiu",
-  "emails": [
-    {
-      "value": "david@example.com",
-      "type": "work",
-      "primary": true
-    },
-    {
-      "value": "david@home.com",
-      "type": "home"
-    }
-  ],
-  "addresses": [
-    {
-      "type": "work",
-      "streetAddress": "123 Main Street",
-      "locality": "Toronto",
-      "region": "ON",
-      "postalCode": "M1M A1A",
-      "country": "CA",
-      "formatted": "123 Main Street, Toronto ON, CA, M1M A1A",
-      "primary": true
-    }
-  ],
-  "phoneNumbers": [
-    {
-      "value": "123-456-7890",
-      "type": "work"
-    }
-  ],
-  "ims": [
-    {
-      "value": "someaimhandle",
-      "type": "aim"
-    }
-  ],
-  "photos": [
-    {
-      "value": "https://photos.example.com/profilephoto/72930000000Ccne/F",
-      "type": "photo"
-    },
-    {
-      "value": "https://photos.example.com/profilephoto/72930000000Ccne/T",
-      "type": "thumbnail"
-    }
-  ],
-  "userType": "Employee",
-  "title": "Tour Guide",
-  "preferredLanguage": "en-US",
-  "locale": "en-US",
-  "timezone": "America/Los_Angeles",
-  "active":true,
-  "password": "t1meMa$heen",
-  "meta": {
-    "resourceType": "User",
-    "created": "2016-01-23T04:56:22Z",
-    "lastModified": "2016-05-13T04:42:34Z",
-    "version": "W\/\"a330bc54f0671c9\"",
-    "location": "https://example.com/v2/Users/6B69753B-4E38-444E-8AC6-9D0E4D644D80"
-  }
-}
-`
 
 func TestApplyPatchGroup(t *testing.T) {
 	schema := &Schema{}
@@ -333,6 +303,22 @@ func TestApplyPatchGroup(t *testing.T) {
 		{
 			"add multivalued as AzureAD style",
 			func() Patch {
+				const patchAddSrc1 = `
+					{
+						"schemas": [
+							"urn:ietf:params:scim:api:messages:2.0:PatchOp"
+						],
+						"Operations": [{
+							"op": "Add",
+							"path": "members", 
+							"value": [{
+								"$ref": null,
+								"value": "hogehoge_group_id"
+							}]
+						}]
+					}
+				`
+
 				var mods Modification
 				err := json.Unmarshal([]byte(patchAddSrc1), &mods)
 				assert.Nil(t, err)
@@ -351,6 +337,21 @@ func TestApplyPatchGroup(t *testing.T) {
 			},
 		},
 	} {
+		const TestGroupJson = `
+			{
+				"schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+				"id": "e9e30dba-f08f-4109-8486-d5c6a331660a",
+				"displayName": "Tour Guides",
+				"meta": {
+					"resourceType": "Group",
+					"created": "2010-01-23T04:56:22Z",
+					"lastModified": "2011-05-13T04:42:34Z",
+					"version": "W\/\"3694e05e9dff592\"",
+					"location": "https://example.com/v2/Groups/e9e30dba-f08f-4109-8486-d5c6a331660a"
+				}
+			}
+		`
+
 		t.Run(test.name, func(t *testing.T) {
 			data := make(map[string]interface{}, 0)
 			err := json.Unmarshal([]byte(TestGroupJson), &data)
@@ -362,37 +363,6 @@ func TestApplyPatchGroup(t *testing.T) {
 		})
 	}
 }
-
-const TestGroupJson = `
-{
-  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
-  "id": "e9e30dba-f08f-4109-8486-d5c6a331660a",
-  "displayName": "Tour Guides",
-  "meta": {
-    "resourceType": "Group",
-    "created": "2010-01-23T04:56:22Z",
-    "lastModified": "2011-05-13T04:42:34Z",
-    "version": "W\/\"3694e05e9dff592\"",
-    "location": "https://example.com/v2/Groups/e9e30dba-f08f-4109-8486-d5c6a331660a"
-  }
-}
-`
-
-const patchAddSrc1 = `
-{
-  "schemas": [
-    "urn:ietf:params:scim:api:messages:2.0:PatchOp"
-  ],
-  "Operations": [{
-    "op": "Add",
-    "path": "members", 
-    "value": [{
-      "$ref": null,
-      "value": "hogehoge_group_id"
-    }]
-  }]
-}
-`
 
 func TestPatchValidate(t *testing.T) {
 	t.Run("Patch remove operation", func(t *testing.T) {
