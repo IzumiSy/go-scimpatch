@@ -303,7 +303,7 @@ func TestApplyPatchGroup(t *testing.T) {
 		{
 			"add multivalued as AzureAD style",
 			func() Patch {
-				const patchAddSrc1 = `
+				const patchSrc = `
 					{
 						"schemas": [
 							"urn:ietf:params:scim:api:messages:2.0:PatchOp"
@@ -313,14 +313,14 @@ func TestApplyPatchGroup(t *testing.T) {
 							"path": "members", 
 							"value": [{
 								"$ref": null,
-								"value": "hogehoge_group_id"
+								"value": "added_group_id"
 							}]
 						}]
 					}
 				`
 
 				var mods Modification
-				err := json.Unmarshal([]byte(patchAddSrc1), &mods)
+				err := json.Unmarshal([]byte(patchSrc), &mods)
 				assert.Nil(t, err)
 				return mods.Ops[0]
 			}(),
@@ -330,10 +330,43 @@ func TestApplyPatchGroup(t *testing.T) {
 				if membersVal.Kind() == reflect.Interface {
 					membersVal = membersVal.Elem()
 				}
-				assert.Equal(t, 1, membersVal.Len())
-				assert.True(t, reflect.DeepEqual(membersVal.Index(0).Interface(), map[string]interface{}{
-					"$ref": nil, "value": "hogehoge_group_id",
+				assert.Equal(t, 2, membersVal.Len())
+				assert.True(t, reflect.DeepEqual(membersVal.Index(1).Interface(), map[string]interface{}{
+					"$ref": nil, "value": "added_group_id",
 				}))
+			},
+		},
+		{
+			"remove multivalued as AzureAD style",
+			func() Patch {
+				const patchSrc = `
+						{
+							"schemas": [
+								"urn:ietf:params:scim:api:messages:2.0:PatchOp"
+							],
+							"Operations": [{
+								"op": "Remove",
+								"path": "members",
+								"value": [{
+									"$ref": null,
+									"value": "deleting_group_id"
+								}]
+							}]
+						}
+					`
+
+				var mods Modification
+				err := json.Unmarshal([]byte(patchSrc), &mods)
+				assert.Nil(t, err)
+				return mods.Ops[0]
+			}(),
+			func(r *Resource, err error) {
+				assert.Nil(t, err)
+				membersVal := reflect.ValueOf(r.GetData()["members"])
+				if membersVal.Kind() == reflect.Interface {
+					membersVal = membersVal.Elem()
+				}
+				assert.Equal(t, 0, membersVal.Len())
 			},
 		},
 	} {
@@ -342,6 +375,9 @@ func TestApplyPatchGroup(t *testing.T) {
 				"schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
 				"id": "e9e30dba-f08f-4109-8486-d5c6a331660a",
 				"displayName": "Tour Guides",
+				"members": [
+					{ "value": "deleting_group_id" }
+				],
 				"meta": {
 					"resourceType": "Group",
 					"created": "2010-01-23T04:56:22Z",
