@@ -35,7 +35,7 @@ func TestApplyPatchUsers(t *testing.T) {
 		{
 			// add: AzureAD style
 			Patch{Op: "Replace", Path: "displayName", Value: []interface{}{
-				map[string]interface{}{"$ref": "null", "value": "hoge太郎"},
+				map[string]interface{}{"$ref": nil, "value": "hoge太郎"},
 			}},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -45,7 +45,7 @@ func TestApplyPatchUsers(t *testing.T) {
 		{
 			// add: AzureAD style for boolean
 			Patch{Op: "Replace", Path: "active", Value: []interface{}{
-				map[string]interface{}{"$ref": "null", "value": "True"},
+				map[string]interface{}{"$ref": nil, "value": "True"},
 			}},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -62,7 +62,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// add: multiValued
+			// add: multivalued
 			Patch{Op: Add, Path: "emails", Value: map[string]interface{}{"value": "foo@bar.com"}},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -75,9 +75,9 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// add: AzureAD style for multiValued
+			// add: AzureAD style for multivalued
 			Patch{Op: "Add", Path: "emails", Value: []interface{}{
-				map[string]interface{}{"$ref": "null", "value": "foo@bar.com"},
+				map[string]interface{}{"$ref": nil, "value": "foo@bar.com"},
 			}},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -87,12 +87,12 @@ func TestApplyPatchUsers(t *testing.T) {
 				}
 				assert.Equal(t, 3, emailsVal.Len())
 				assert.True(t, reflect.DeepEqual(emailsVal.Index(2).Interface(), map[string]interface{}{
-					"$ref": "null", "value": "foo@bar.com",
+					"$ref": nil, "value": "foo@bar.com",
 				}))
 			},
 		},
 		{
-			// add : duplex multivalued
+			// add: duplex multivalued
 			Patch{Op: Add, Path: "emails.value", Value: "foo@bar.com"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -180,7 +180,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// remove: multiValued
+			// remove: multivalued
 			Patch{Op: Remove, Path: "emails"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -188,7 +188,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// remove : duplex multivalued
+			// remove: duplex multivalued
 			Patch{Op: Remove, Path: "emails.value"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -326,19 +326,42 @@ func TestApplyPatchGroup(t *testing.T) {
 		patch     Patch
 		assertion func(r *Resource, err error)
 	}{
+		// AzureAD style multivalued
 		{
-			Patch{Op: "Add", Path: "members", Value: []interface{}{
-				map[string]interface{}{"$ref": "null", "value": "hogehoge_group_id"},
-			}},
+			func() Patch {
+				src := `
+					{
+						"schemas": [
+							"urn:ietf:params:scim:api:messages:2.0:PatchOp"
+						],
+						"Operations": [{
+							"op": "Add",
+							"path": "members", 
+							"value": [{
+								"$ref": null,
+								"value": "hogehoge_group_id"
+							}]
+						}]
+					}
+				`
+
+				var mods Modification
+				if err := json.Unmarshal([]byte(src), &mods); err != nil {
+					t.Errorf("Failed parsing modification: %s", err.Error())
+					t.Fail()
+				}
+
+				return mods.Ops[0]
+			}(),
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
 				membersVal := reflect.ValueOf(r.GetData()["members"])
 				if membersVal.Kind() == reflect.Interface {
 					membersVal = membersVal.Elem()
 				}
-				assert.Equal(t, 3, membersVal.Len())
-				assert.True(t, reflect.DeepEqual(membersVal.Index(2).Interface(), map[string]interface{}{
-					"$ref": "null", "value": "hogehoge_group_id",
+				assert.Equal(t, 1, membersVal.Len())
+				assert.True(t, reflect.DeepEqual(membersVal.Index(0).Interface(), map[string]interface{}{
+					"$ref": nil, "value": "hogehoge_group_id",
 				}))
 			},
 		},
@@ -358,18 +381,6 @@ const TestGroupJson = `
 	"schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
 	"id": "e9e30dba-f08f-4109-8486-d5c6a331660a",
 	"displayName": "Tour Guides",
-	"members": [
-    {
-      "value": "2819c223-7f76-453a-919d-413861904646",
-      "$ref": "https://example.com/v2/Users/2819c223-7f76-453a-919d-413861904646",
-      "display": "Babs Jensen"
-    },
-    {
-      "value": "902c246b-6245-4190-8e05-00816be7344a",
-      "$ref": "https://example.com/v2/Users/902c246b-6245-4190-8e05-00816be7344a",
-      "display": "Mandy Pepperidge"
-    }
-  ],
   "meta": {
     "resourceType": "Group",
     "created": "2010-01-23T04:56:22Z",
