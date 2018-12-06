@@ -13,11 +13,12 @@ func TestApplyPatchUsers(t *testing.T) {
 	assert.Nil(t, err)
 
 	for _, test := range []struct {
+		name      string
 		patch     Patch
 		assertion func(r *Resource, err error)
 	}{
 		{
-			// add: simple path
+			"add simple path",
 			Patch{Op: Add, Path: "userName", Value: "foo"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -25,7 +26,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// add: duplex path
+			"add duplex path",
 			Patch{Op: Add, Path: "name.familyName", Value: "foo"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -33,7 +34,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// add: AzureAD style
+			"add simple path as AzureAD style",
 			Patch{Op: "Replace", Path: "displayName", Value: []interface{}{
 				map[string]interface{}{"$ref": nil, "value": "hoge太郎"},
 			}},
@@ -43,7 +44,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// add: AzureAD style for boolean
+			"replace simple path for boolean as AzureAD style",
 			Patch{Op: "Replace", Path: "active", Value: []interface{}{
 				map[string]interface{}{"$ref": nil, "value": "True"},
 			}},
@@ -53,7 +54,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// add: implicit path
+			"add implicit path",
 			Patch{Op: Add, Path: "", Value: map[string]interface{}{"userName": "foo", "externalId": "bar"}},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -62,7 +63,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// add: multivalued
+			"add multivalued",
 			Patch{Op: Add, Path: "emails", Value: map[string]interface{}{"value": "foo@bar.com"}},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -75,7 +76,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// add: AzureAD style for multivalued
+			"add multivalued as AzureAD style",
 			Patch{Op: "Add", Path: "emails", Value: []interface{}{
 				map[string]interface{}{"$ref": nil, "value": "foo@bar.com"},
 			}},
@@ -92,7 +93,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// add: duplex multivalued
+			"add duplex multivalued",
 			Patch{Op: Add, Path: "emails.value", Value: "foo@bar.com"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -106,7 +107,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// add: duplex multivalued with filter
+			"add duplex multivalued with filter",
 			Patch{Op: Add, Path: "emails[type eq \"work\"].value", Value: "foo@bar.com"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -120,7 +121,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// replace: simple path
+			"replace simple path",
 			Patch{Op: Replace, Path: "userName", Value: "foo"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -128,7 +129,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// replace: duplex path
+			"replace duplex path",
 			Patch{Op: Replace, Path: "name.familyName", Value: "foo"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -136,7 +137,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// replace : duplex multivalued
+			"replace duplex multivalued",
 			Patch{Op: Add, Path: "emails.value", Value: "foo@bar.com"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -150,7 +151,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// replace: duplex multivalued with filter
+			"replace duplex multivalued with filter",
 			Patch{Op: Add, Path: "emails[type eq \"work\"].value", Value: "foo@bar.com"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -164,7 +165,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// remove: simple path
+			"remove simple path",
 			Patch{Op: Remove, Path: "userName"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -172,7 +173,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// remove: duplex path
+			"remove duplex path",
 			Patch{Op: Remove, Path: "name.familyName"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -180,7 +181,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// remove: multivalued
+			"remove multivalued",
 			Patch{Op: Remove, Path: "emails"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -188,7 +189,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// remove: duplex multivalued
+			"remove duplex multivalued",
 			Patch{Op: Remove, Path: "emails.value"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -202,7 +203,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// replace: duplex multivalued with filter
+			"replace duplex multivalued with filter",
 			Patch{Op: Remove, Path: "emails[type eq \"work\"].value"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -215,7 +216,7 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
-			// replace: duplex multivalued with filter
+			"replace duplex multivalued with filter",
 			Patch{Op: Remove, Path: "emails[type eq \"work\"]"},
 			func(r *Resource, err error) {
 				assert.Nil(t, err)
@@ -228,13 +229,15 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 	} {
-		data := make(map[string]interface{}, 0)
-		err := json.Unmarshal([]byte(TestUserJson), &data)
-		assert.Nil(t, err)
+		t.Run(test.name, func(t *testing.T) {
+			data := make(map[string]interface{}, 0)
+			err := json.Unmarshal([]byte(TestUserJson), &data)
+			assert.Nil(t, err)
 
-		resource := &Resource{Complex(data)}
-		err = ApplyPatch(test.patch, resource, schema)
-		test.assertion(resource, err)
+			resource := &Resource{Complex(data)}
+			err = ApplyPatch(test.patch, resource, schema)
+			test.assertion(resource, err)
+		})
 	}
 }
 
@@ -317,36 +320,21 @@ const TestUserJson = `
 }
 `
 
-const patchSrc1 = `
-{
-  "schemas": [
-    "urn:ietf:params:scim:api:messages:2.0:PatchOp"
-  ],
-  "Operations": [{
-    "op": "Add",
-    "path": "members", 
-    "value": [{
-      "$ref": null,
-      "value": "hogehoge_group_id"
-    }]
-  }]
-}
-`
-
 func TestApplyPatchGroup(t *testing.T) {
 	schema := &Schema{}
 	err := json.Unmarshal([]byte(GroupSchemaJson), &schema)
 	assert.Nil(t, err)
 
 	for _, test := range []struct {
+		name      string
 		patch     Patch
 		assertion func(r *Resource, err error)
 	}{
-		// AzureAD style multivalued
 		{
+			"add multivalued as AzureAD style",
 			func() Patch {
 				var mods Modification
-				err := json.Unmarshal([]byte(patchSrc1), &mods)
+				err := json.Unmarshal([]byte(patchAddSrc1), &mods)
 				assert.Nil(t, err)
 				return mods.Ops[0]
 			}(),
@@ -363,13 +351,15 @@ func TestApplyPatchGroup(t *testing.T) {
 			},
 		},
 	} {
-		data := make(map[string]interface{}, 0)
-		err := json.Unmarshal([]byte(TestGroupJson), &data)
-		assert.Nil(t, err)
+		t.Run(test.name, func(t *testing.T) {
+			data := make(map[string]interface{}, 0)
+			err := json.Unmarshal([]byte(TestGroupJson), &data)
+			assert.Nil(t, err)
 
-		resource := &Resource{Complex(data)}
-		err = ApplyPatch(test.patch, resource, schema)
-		test.assertion(resource, err)
+			resource := &Resource{Complex(data)}
+			err = ApplyPatch(test.patch, resource, schema)
+			test.assertion(resource, err)
+		})
 	}
 }
 
@@ -385,6 +375,22 @@ const TestGroupJson = `
     "version": "W\/\"3694e05e9dff592\"",
     "location": "https://example.com/v2/Groups/e9e30dba-f08f-4109-8486-d5c6a331660a"
   }
+}
+`
+
+const patchAddSrc1 = `
+{
+  "schemas": [
+    "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+  ],
+  "Operations": [{
+    "op": "Add",
+    "path": "members", 
+    "value": [{
+      "$ref": null,
+      "value": "hogehoge_group_id"
+    }]
+  }]
 }
 `
 
