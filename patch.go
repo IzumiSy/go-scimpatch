@@ -86,34 +86,9 @@ func ApplyPatch(patch Patch, subj *Resource, schema *Schema) (err error) {
 		v = v.Elem()
 	}
 
-	// [AzureAD対策]
-	if ps.destAttr != nil {
-		if strings.ToLower(patch.Op) == "remove" && ps.destAttr.MultiValued && patch.Value != nil {
-			valueKind := v.Kind()
-
-			var value reflect.Value
-
-			switch valueKind {
-			case reflect.Map:
-				mapValue := v.Interface().(map[string]interface{})
-				value = reflect.ValueOf(mapValue["value"])
-			case reflect.Slice, reflect.Array:
-				arrayValue := v.Interface().([]interface{})
-				head := arrayValue[0].(map[string]interface{})
-				value = reflect.ValueOf(head["value"])
-			}
-
-			patch.Path = patch.Path + "[value eq \"" + value.String() + "\"]"
-
-			err, psPtr, pathPtr = buildPatchState(patch, schema)
-			if err != nil {
-				fmt.Println(err.Error())
-				return err
-			}
-
-			ps = *psPtr
-			path = *pathPtr
-		}
+	err = applyAzureADRemoveSupport(&ps, &path)
+	if err != nil {
+		return err
 	}
 
 	switch strings.ToLower(patch.Op) {
@@ -127,6 +102,44 @@ func ApplyPatch(patch Patch, subj *Resource, schema *Schema) (err error) {
 		err = fmt.Errorf("Invalid operator: %s", patch.Op)
 	}
 	return
+}
+
+// [AzureAD対策]
+// TODO: これが必要な理由をあとでかく
+func applyAzureADRemoveSupport(ps *patchState, path *Path) error {
+	patch := (*ps).patch
+
+	if ps.destAttr != nil {
+		if strings.ToLower(patch.Op) == "remove" && ps.destAttr.MultiValued && patch.Value != nil {
+			v := reflect.ValueOf(patch.Value)
+			if v.Kind() == reflect.Interface {
+				v = v.Elem()
+			}
+			valueKind := v.Kind()
+
+			var value reflect.Value
+			switch valueKind {
+			case reflect.Map:
+				mapValue := v.Interface().(map[string]interface{})
+				value = reflect.ValueOf(mapValue["value"])
+			case reflect.Slice, reflect.Array:
+				arrayValue := v.Interface().([]interface{})
+				head := arrayValue[0].(map[string]interface{})
+				value = reflect.ValueOf(head["value"])
+			}
+
+			patch.Path = patch.Path + "[value eq \"" + value.String() + "\"]"
+			err, psPtr, pathPtr := buildPatchState(patch, ps.sch)
+			if err != nil {
+				return err
+			}
+
+			*ps = *psPtr
+			*path = *pathPtr
+		}
+	}
+
+	return nil
 }
 
 func buildPatchState(patch Patch, schema *Schema) (error, *patchState, *Path) {
