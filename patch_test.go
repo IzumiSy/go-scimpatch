@@ -346,11 +346,8 @@ func TestApplyPatchGroup(t *testing.T) {
 		{
 			func() Patch {
 				var mods Modification
-				if err := json.Unmarshal([]byte(patchSrc1), &mods); err != nil {
-					t.Errorf("Failed parsing modification: %s", err.Error())
-					t.Fail()
-				}
-
+				err := json.Unmarshal([]byte(patchSrc1), &mods)
+				assert.Nil(t, err)
 				return mods.Ops[0]
 			}(),
 			func(r *Resource, err error) {
@@ -390,3 +387,29 @@ const TestGroupJson = `
   }
 }
 `
+
+func TestPatchValidate(t *testing.T) {
+	t.Run("Patch remove operation", func(t *testing.T) {
+		src := `
+			{
+				"schemas": [
+					"urn:ietf:params:scim:api:messages:2.0:PatchOp"
+				],
+				"Operations": [{
+					"op": "Remove",
+					"path": "members",
+					"value": [{
+						"$ref": null,
+						"value": "e9c3efc8-b74b-487d-b3a2-3265d7eb45d9"
+					}]
+				}]
+			}
+		`
+
+		var mods Modification
+		err := json.Unmarshal([]byte(src), &mods)
+
+		assert.Nil(t, err)
+		assert.Nil(t, mods.Validate())
+	})
+}
