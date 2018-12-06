@@ -104,6 +104,31 @@ func ApplyPatch(patch Patch, subj *Resource, schema *Schema) (err error) {
 	return
 }
 
+func buildPatchState(patch Patch, schema *Schema) (error, *patchState, *Path) {
+	ps := patchState{patch: patch, sch: schema}
+
+	var err error
+	var path Path
+	if len(patch.Path) == 0 {
+		path = nil
+	} else {
+		path, err = NewPath(patch.Path)
+		if err != nil {
+			return err, nil, nil
+		}
+		fmt.Printf("%+v\n", path)
+		path.CorrectCase(schema, true)
+
+		if attr := schema.GetAttribute(path, true); attr != nil {
+			ps.destAttr = attr
+		} else {
+			return fmt.Errorf("No attribute found for path: %s", patch.Path), nil, nil
+		}
+	}
+
+	return nil, &ps, &path
+}
+
 // [AzureAD対策]
 // TODO: これが必要な理由をあとでかく
 func applyAzureADRemoveSupport(ps *patchState, path *Path) error {
@@ -139,31 +164,6 @@ func applyAzureADRemoveSupport(ps *patchState, path *Path) error {
 	}
 
 	return nil
-}
-
-func buildPatchState(patch Patch, schema *Schema) (error, *patchState, *Path) {
-	ps := patchState{patch: patch, sch: schema}
-
-	var err error
-	var path Path
-	if len(patch.Path) == 0 {
-		path = nil
-	} else {
-		path, err = NewPath(patch.Path)
-		if err != nil {
-			return err, nil, nil
-		}
-		fmt.Printf("%+v\n", path)
-		path.CorrectCase(schema, true)
-
-		if attr := schema.GetAttribute(path, true); attr != nil {
-			ps.destAttr = attr
-		} else {
-			return fmt.Errorf("No attribute found for path: %s", patch.Path), nil, nil
-		}
-	}
-
-	return nil, &ps, &path
 }
 
 // [AzureAD対策]
