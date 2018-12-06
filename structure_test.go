@@ -14,13 +14,14 @@ func TestComplex_Set(t *testing.T) {
 	assert.Nil(t, err)
 
 	for _, test := range []struct {
+		name      string
 		complex   Complex
 		pathText  string
 		value     interface{}
 		assertion func(c Complex, err error)
 	}{
 		{
-			// single path
+			"single path",
 			Complex{"userName": "foo"},
 			"userName",
 			"david",
@@ -30,7 +31,7 @@ func TestComplex_Set(t *testing.T) {
 			},
 		},
 		{
-			// duplex path
+			"duplex path",
 			Complex{"name": map[string]interface{}{"familyName": "Qiu"}},
 			"name.familyName",
 			"Q",
@@ -40,7 +41,7 @@ func TestComplex_Set(t *testing.T) {
 			},
 		},
 		{
-			// duplex path (previously does not exist)
+			"duplex path (previously does not exist)",
 			Complex{"name": map[string]interface{}{"familyName": "Qiu"}},
 			"name.givenName",
 			"David",
@@ -50,7 +51,7 @@ func TestComplex_Set(t *testing.T) {
 			},
 		},
 		{
-			// simple path with filter
+			"simple path with filter",
 			Complex{"emails": []interface{}{
 				map[string]interface{}{
 					"value": "a@foo.com",
@@ -80,7 +81,7 @@ func TestComplex_Set(t *testing.T) {
 			},
 		},
 		{
-			// duplex path with filter
+			"duplex path with filter",
 			Complex{"emails": []interface{}{
 				map[string]interface{}{
 					"value": "a@foo.com",
@@ -104,11 +105,13 @@ func TestComplex_Set(t *testing.T) {
 			},
 		},
 	} {
-		p, err := NewPath(test.pathText)
-		require.Nil(t, err)
+		t.Run(test.name, func(t *testing.T) {
+			p, err := NewPath(test.pathText)
+			require.Nil(t, err)
 
-		err = test.complex.Set(p, test.value, schema)
-		test.assertion(test.complex, err)
+			err = test.complex.Set(p, test.value, schema)
+			test.assertion(test.complex, err)
+		})
 	}
 }
 
@@ -118,12 +121,13 @@ func TestComplex_Get(t *testing.T) {
 	assert.Nil(t, err)
 
 	for _, test := range []struct {
+		name      string
 		complex   Complex
 		pathText  string
 		assertion func(result chan interface{})
 	}{
 		{
-			// no existing path
+			"no existing path",
 			Complex{"userName": "david"},
 			"dummy",
 			func(result chan interface{}) {
@@ -131,7 +135,7 @@ func TestComplex_Get(t *testing.T) {
 			},
 		},
 		{
-			// single path
+			"single path",
 			Complex{"userName": "david"},
 			"userName",
 			func(result chan interface{}) {
@@ -139,7 +143,7 @@ func TestComplex_Get(t *testing.T) {
 			},
 		},
 		{
-			// duplex path
+			"duplex path",
 			Complex{"name": map[string]interface{}{"familyName": "Qiu"}},
 			"name.familyName",
 			func(result chan interface{}) {
@@ -147,7 +151,7 @@ func TestComplex_Get(t *testing.T) {
 			},
 		},
 		{
-			// simple path with filter
+			"simple path with filter",
 			Complex{
 				"emails": []interface{}{
 					map[string]interface{}{
@@ -178,7 +182,7 @@ func TestComplex_Get(t *testing.T) {
 			},
 		},
 		{
-			// duplex path with filter
+			"duplex path with filter",
 			Complex{
 				"emails": []interface{}{
 					map[string]interface{}{
@@ -207,7 +211,7 @@ func TestComplex_Get(t *testing.T) {
 			},
 		},
 		{
-			// duplex path with filter (part missing)
+			"duplex path with filter (part missing)",
 			Complex{
 				"emails": []interface{}{
 					map[string]interface{}{
@@ -234,8 +238,10 @@ func TestComplex_Get(t *testing.T) {
 			},
 		},
 	} {
-		p, err := NewPath(test.pathText)
-		require.Nil(t, err)
-		test.assertion(test.complex.Get(p, schema))
+		t.Run(test.name, func(t *testing.T) {
+			p, err := NewPath(test.pathText)
+			require.Nil(t, err)
+			test.assertion(test.complex.Get(p, schema))
+		})
 	}
 }

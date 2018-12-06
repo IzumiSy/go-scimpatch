@@ -11,11 +11,12 @@ import (
 
 func TestNewPath(t *testing.T) {
 	for _, test := range []struct {
+		name      string
 		text      string
 		assertion func(head Path, err error)
 	}{
 		{
-			// single
+			"single",
 			"username",
 			func(head Path, err error) {
 				assert.Nil(t, err)
@@ -25,7 +26,7 @@ func TestNewPath(t *testing.T) {
 			},
 		},
 		{
-			// duplex
+			"duplex",
 			"name.familyName",
 			func(head Path, err error) {
 				assert.Nil(t, err)
@@ -36,7 +37,7 @@ func TestNewPath(t *testing.T) {
 			},
 		},
 		{
-			// single filter
+			"single filter",
 			"emails[value eq \"david@foo.com\"]",
 			func(head Path, err error) {
 				assert.Nil(t, err)
@@ -47,7 +48,7 @@ func TestNewPath(t *testing.T) {
 			},
 		},
 		{
-			// duplex with filter
+			"duplex with filter",
 			"emails[value eq \"david@foo.com\"].type",
 			func(head Path, err error) {
 				assert.Nil(t, err)
@@ -59,17 +60,20 @@ func TestNewPath(t *testing.T) {
 			},
 		},
 	} {
-		test.assertion(NewPath(test.text))
+		t.Run(test.name, func(t *testing.T) {
+			test.assertion(NewPath(test.text))
+		})
 	}
 }
 
 func TestNewFilter(t *testing.T) {
 	for _, test := range []struct {
+		name      string
 		text      string
 		assertion func(root FilterNode, err error)
 	}{
 		{
-			// eq
+			"eq",
 			"username eq \"david\"",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -88,7 +92,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// ne
+			"ne",
 			"active ne true",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -107,7 +111,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// sw
+			"sw",
 			"username sw \"david\"",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -118,7 +122,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// ew
+			"ew",
 			"username ew \"david\"",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -129,7 +133,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// co
+			"co",
 			"username co \"david\"",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -140,7 +144,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// pr
+			"pr",
 			"emails pr",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -157,7 +161,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// gt
+			"gt",
 			"created gt \"20170406\"",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -176,7 +180,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// ge
+			"ge",
 			"created ge \"20170406\"",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -187,7 +191,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// lt
+			"lt",
 			"created lt \"20170406\"",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -198,7 +202,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// le
+			"le",
 			"created le \"20170406\"",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -209,7 +213,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// and
+			"and",
 			"username eq \"david\" and age gt 18",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -228,7 +232,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// or
+			"or",
 			"username eq \"david\" or age gt 18",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -247,7 +251,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// not
+			"not",
 			"not username eq \"david\"",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -264,7 +268,7 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 		{
-			// parenthesis
+			"parenthesis",
 			"not (username eq \"david\" and age gt 18)",
 			func(root FilterNode, err error) {
 				assert.Nil(t, err)
@@ -281,17 +285,20 @@ func TestNewFilter(t *testing.T) {
 			},
 		},
 	} {
-		test.assertion(NewFilter(test.text))
+		t.Run(test.name, func(t *testing.T) {
+			test.assertion(NewFilter(test.text))
+		})
 	}
 }
 
 func TestPath_SeparateAtLast(t *testing.T) {
 	for _, test := range []struct {
+		name      string
 		pathText  string
 		assertion func(a, b Path)
 	}{
 		{
-			// single path
+			"single path",
 			"foo",
 			func(a, b Path) {
 				assert.Nil(t, a)
@@ -300,7 +307,7 @@ func TestPath_SeparateAtLast(t *testing.T) {
 			},
 		},
 		{
-			// duplex path
+			"duplex path",
 			"name.familyName",
 			func(a, b Path) {
 				assert.Equal(t, "name", a.Base())
@@ -310,7 +317,7 @@ func TestPath_SeparateAtLast(t *testing.T) {
 			},
 		},
 		{
-			// duplex path with filter
+			"duplex path with filter",
 			"emails[type eq \"work\"].value",
 			func(a, b Path) {
 				assert.Equal(t, "emails", a.Base())
@@ -321,9 +328,11 @@ func TestPath_SeparateAtLast(t *testing.T) {
 			},
 		},
 	} {
-		p, err := NewPath(test.pathText)
-		require.Nil(t, err)
-		test.assertion(p.SeparateAtLast())
+		t.Run(test.name, func(t *testing.T) {
+			p, err := NewPath(test.pathText)
+			require.Nil(t, err)
+			test.assertion(p.SeparateAtLast())
+		})
 	}
 }
 
@@ -371,9 +380,11 @@ func TestPath_CorrectCase(t *testing.T) {
 			},
 		},
 	} {
-		p, err := NewPath(test.pathText)
-		require.Nil(t, err)
-		p.CorrectCase(schema, true)
-		test.assertion(p)
+		t.Run(test.pathText, func(t *testing.T) {
+			p, err := NewPath(test.pathText)
+			require.Nil(t, err)
+			p.CorrectCase(schema, true)
+			test.assertion(p)
+		})
 	}
 }

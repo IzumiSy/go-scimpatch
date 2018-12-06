@@ -66,8 +66,10 @@ func TestSchema_GetAttribute(t *testing.T) {
 			},
 		},
 	} {
-		p, err := NewPath(test.pathText)
-		require.Nil(t, err)
-		test.assertion(schema.GetAttribute(p, true))
+		t.Run(test.pathText, func(t *testing.T) {
+			p, err := NewPath(test.pathText)
+			require.Nil(t, err)
+			test.assertion(schema.GetAttribute(p, true))
+		})
 	}
 }
