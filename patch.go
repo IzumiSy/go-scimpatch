@@ -81,14 +81,14 @@ func ApplyPatch(patch Patch, subj *Resource, schema *Schema) (err error) {
 	ps := *psPtr
 	path := *pathPtr
 
-	v := reflect.ValueOf(patch.Value)
-	if v.Kind() == reflect.Interface {
-		v = v.Elem()
-	}
-
 	err = applyAzureADRemoveSupport(&ps, &path)
 	if err != nil {
 		return err
+	}
+
+	v := reflect.ValueOf(patch.Value)
+	if v.Kind() == reflect.Interface {
+		v = v.Elem()
 	}
 
 	switch strings.ToLower(patch.Op) {
