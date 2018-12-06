@@ -317,6 +317,22 @@ const TestUserJson = `
 }
 `
 
+const patchSrc1 = `
+{
+  "schemas": [
+    "urn:ietf:params:scim:api:messages:2.0:PatchOp"
+  ],
+  "Operations": [{
+    "op": "Add",
+    "path": "members", 
+    "value": [{
+      "$ref": null,
+      "value": "hogehoge_group_id"
+    }]
+  }]
+}
+`
+
 func TestApplyPatchGroup(t *testing.T) {
 	schema := &Schema{}
 	err := json.Unmarshal([]byte(GroupSchemaJson), &schema)
@@ -329,24 +345,8 @@ func TestApplyPatchGroup(t *testing.T) {
 		// AzureAD style multivalued
 		{
 			func() Patch {
-				src := `
-          {
-            "schemas": [
-              "urn:ietf:params:scim:api:messages:2.0:PatchOp"
-            ],
-            "Operations": [{
-              "op": "Add",
-              "path": "members", 
-              "value": [{
-                "$ref": null,
-                "value": "hogehoge_group_id"
-              }]
-            }]
-          }
-				`
-
 				var mods Modification
-				if err := json.Unmarshal([]byte(src), &mods); err != nil {
+				if err := json.Unmarshal([]byte(patchSrc1), &mods); err != nil {
 					t.Errorf("Failed parsing modification: %s", err.Error())
 					t.Fail()
 				}
