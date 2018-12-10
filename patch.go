@@ -130,7 +130,11 @@ func buildPatchState(patch Patch, schema *Schema) (error, *patchState, *Path) {
 }
 
 // [AzureAD対策]
-// TODO: これが必要な理由をあとでかく
+// 忌まわしきAzureADのバグとしてそもそも配列値からの要素削除のリクエストがおかしいというものがあり、ここのコードでその対策をしている
+// RFC上は配列からの要素の削除は `members[value eq "target_member_id"]` のようなフィルタクエリで削除対象を指定するものであるが
+// AzureADはなぜかフィルタクエリを使わず、削除対象の要素をvalueフィールドで指定して削除しようとしてくる。
+// そもそもgo-scimpatchはRFCに沿って作られたものであるため、こういうそもそもRFCに則ってないリクエストを受け付けるような動きにはなっていない。
+// したがって、このようなAzureADの動きに対応するようなグルーコードもどきを仕方なく作ることとなった。
 func applyAzureADRemoveSupport(ps *patchState, path *Path) error {
 	patch := (*ps).patch
 
@@ -170,6 +174,7 @@ func applyAzureADRemoveSupport(ps *patchState, path *Path) error {
 // 特定のSCIMクライアントがstring型のフィールドに対して配列値を送ってくることがある
 // なので、配列やオブジェクトが値として送られてきた場合にはここで取り出して単一値として与えたい。
 // 雑な実装として配列値が与えられた場合には必ず配列の先頭のオブジェクトから常にvalueフィールドを対象のデータとして取り出すことにする。
+// https://social.msdn.microsoft.com/Forums/lync/en-US/e2200b69-4333-41ea-9f51-717d316c7751/automatic-user-provisioning-scim-restful-patch-payload-issue
 func fixValueWithType(destAttr *Attribute, value reflect.Value) reflect.Value {
 	valueKind := value.Kind()
 
