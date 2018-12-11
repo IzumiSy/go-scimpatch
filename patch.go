@@ -116,7 +116,6 @@ func buildPatchState(patch Patch, schema *Schema) (error, *patchState, *Path) {
 		if err != nil {
 			return err, nil, nil
 		}
-		fmt.Printf("%+v\n", path)
 		path.CorrectCase(schema, true)
 
 		if attr := schema.GetAttribute(path, true); attr != nil {
