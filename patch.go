@@ -197,6 +197,8 @@ func fixValueWithType(destAttr *Attribute, value reflect.Value) reflect.Value {
 				arrayValue := value.Interface().([]interface{})
 				head := arrayValue[0].(map[string]interface{})
 				v = reflect.ValueOf(head["value"])
+			default:
+				v = reflect.ValueOf(value.Interface())
 			}
 
 			// これもAzureADだがbooleanの値をPascalCaseで送ってくるためパースできない。
