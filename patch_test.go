@@ -54,6 +54,14 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
+			"UPDATE 2018-12-28: replace simple path for boolean as AzureAD style 2",
+			Patch{Op: "Replace", Path: "active", Value: "True"},
+			func(r *Resource, err error) {
+				assert.Nil(t, err)
+				assert.Equal(t, true, r.GetData()["active"])
+			},
+		},
+		{
 			"add implicit path",
 			Patch{Op: Add, Path: "", Value: map[string]interface{}{"userName": "foo", "externalId": "bar"}},
 			func(r *Resource, err error) {
