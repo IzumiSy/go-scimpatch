@@ -321,7 +321,7 @@ func TestApplyPatchGroup(t *testing.T) {
 							"path": "members", 
 							"value": [{
 								"$ref": null,
-								"value": "added_group_id"
+								"value": "added_member_id"
 							}]
 						}]
 					}
@@ -340,7 +340,7 @@ func TestApplyPatchGroup(t *testing.T) {
 				}
 				assert.Equal(t, 3, membersVal.Len())
 				assert.True(t, reflect.DeepEqual(membersVal.Index(2).Interface(), map[string]interface{}{
-					"$ref": nil, "value": "added_group_id",
+					"$ref": nil, "value": "added_member_id",
 				}))
 			},
 		},
@@ -357,7 +357,7 @@ func TestApplyPatchGroup(t *testing.T) {
 								"path": "members",
 								"value": [{
 									"$ref": null,
-									"value": "deleting_group_id"
+									"value": "deleting_member_id"
 								}]
 							}]
 						}
@@ -377,6 +377,34 @@ func TestApplyPatchGroup(t *testing.T) {
 				assert.Equal(t, 1, membersVal.Len())
 			},
 		},
+		{
+			"remove AzureAD style multivalued but the specified value is NOT INCLUDED",
+			func() Patch {
+				const patchSrc = `
+						{
+							"schemas": [
+								"urn:ietf:params:scim:api:messages:2.0:PatchOp"
+							],
+							"Operations": [{
+								"op": "Remove",
+								"path": "members",
+								"value": [{
+									"$ref": null,
+									"value": "not_found_member_id"
+								}]
+							}]
+						}
+					`
+
+				var mods Modification
+				err := json.Unmarshal([]byte(patchSrc), &mods)
+				assert.Nil(t, err)
+				return mods.Ops[0]
+			}(),
+			func(r *Resource, err error) {
+				assert.Nil(t, err)
+			},
+		},
 	} {
 		const TestGroupJson = `
 			{
@@ -384,8 +412,8 @@ func TestApplyPatchGroup(t *testing.T) {
 				"id": "e9e30dba-f08f-4109-8486-d5c6a331660a",
 				"displayName": "Tour Guides",
 				"members": [
-					{ "value": "deleting_group_id" },
-					{ "value": "staying_group_id" }
+					{ "value": "deleting_member_id" },
+					{ "value": "staying_member_id" }
 				],
 				"meta": {
 					"resourceType": "Group",
