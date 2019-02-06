@@ -7,16 +7,18 @@ import (
 	"testing"
 )
 
+type patchTest struct {
+	name      string
+	patch     Patch
+	assertion func(r *Resource, err error)
+}
+
 func TestApplyPatchUsers(t *testing.T) {
 	schema := &Schema{}
 	err := json.Unmarshal([]byte(UserSchemaJson), &schema)
 	assert.Nil(t, err)
 
-	for _, test := range []struct {
-		name      string
-		patch     Patch
-		assertion func(r *Resource, err error)
-	}{
+	for _, test := range []patchTest{
 		{
 			"add simple path",
 			Patch{Op: Add, Path: "userName", Value: "foo"},
@@ -303,11 +305,7 @@ func TestApplyPatchGroup(t *testing.T) {
 	err := json.Unmarshal([]byte(GroupSchemaJson), &schema)
 	assert.Nil(t, err)
 
-	for _, test := range []struct {
-		name      string
-		patch     Patch
-		assertion func(r *Resource, err error)
-	}{
+	for _, test := range []patchTest{
 		{
 			"add multivalued as AzureAD style",
 			func() Patch {
@@ -428,6 +426,106 @@ func TestApplyPatchGroup(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			data := make(map[string]interface{}, 0)
 			err := json.Unmarshal([]byte(TestGroupJson), &data)
+			assert.Nil(t, err)
+
+			resource := &Resource{Complex(data)}
+			err = ApplyPatch(test.patch, resource, schema)
+			test.assertion(resource, err)
+		})
+	}
+}
+
+func TestPatchWithEmptyMembers(t *testing.T) {
+	schema := &Schema{}
+	err := json.Unmarshal([]byte(GroupSchemaJson), &schema)
+	assert.Nil(t, err)
+
+	for _, test := range []patchTest{
+		{
+			"Add a new member",
+			func() Patch {
+				const patchSrc = `
+					{
+						"schemas": [
+							"urn:ietf:params:scim:api:messages:2.0:PatchOp"
+						],
+						"Operations": [{
+							"op": "Add",
+							"path": "members",
+							"value": [{
+								"$ref": null,
+								"value": "added_member_id"
+							}]
+						}]
+					}
+				`
+
+				var mods Modification
+				err := json.Unmarshal([]byte(patchSrc), &mods)
+				assert.Nil(t, err)
+				return mods.Ops[0]
+			}(),
+			func(r *Resource, err error) {
+				assert.Nil(t, err)
+				membersVal := reflect.ValueOf(r.GetData()["members"])
+				if membersVal.Kind() == reflect.Interface {
+					membersVal = membersVal.Elem()
+				}
+
+				assert.Equal(t, 1, membersVal.Len())
+				assert.True(t, reflect.DeepEqual(membersVal.Index(0).Interface(), map[string]interface{}{
+					"$ref": nil, "value": "added_member_id",
+				}))
+			},
+		},
+		{
+			"Remove the member who is NOT INCLUDED",
+			func() Patch {
+				const patchSrc = `
+					{
+						"schemas": [
+							"urn:ietf:params:scim:api:messages:2.0:PatchOp"
+						],
+						"Operations": [{
+							"op": "Remove",
+							"path": "members",
+							"value": [{
+								"$ref": null,
+								"value": "deleting_member_id"
+							}]
+						}]
+					}
+				`
+
+				var mods Modification
+				err := json.Unmarshal([]byte(patchSrc), &mods)
+				assert.Nil(t, err)
+				return mods.Ops[0]
+			}(),
+			func(r *Resource, err error) {
+				assert.Nil(t, err)
+			},
+		},
+	} {
+		const TestGroupJsonWithEmptyMembers = `
+			{
+				"schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group"],
+				"id": "e9e30dba-f08f-4109-8486-d5c6a331660a",
+				"displayName": "Tour Guides",
+				"members": [],
+				"meta": {
+					"resourceType": "Group",
+					"created": "2010-01-23T04:56:22Z",
+					"lastModified": "2011-05-13T04:42:34Z",
+					"version": "W\/\"3694e05e9dff592\"",
+					"location": "https://example.com/v2/Groups/e9e30dba-f08f-4109-8486-d5c6a331660a"
+				}
+			}
+		`
+
+		t.Run(test.name, func(t *testing.T) {
+			data := make(map[string]interface{}, 0)
+			err := json.Unmarshal([]byte(TestGroupJsonWithEmptyMembers), &data)
 			assert.Nil(t, err)
 
 			resource := &Resource{Complex(data)}
