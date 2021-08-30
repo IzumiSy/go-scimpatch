@@ -2,19 +2,10 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.9
+      - image: circleci/golang:1.16
     working_directory: /go/src/github.com/IzumiSy/go-scimpatch
+    environment:
+      GO111MODULE: "on"
     steps:
       - checkout
-      - run:
-          name: ensure
-          command: |
-            if [ ! -d vendor ]; then
-              if ! type dep >/dev/null 2>&1; then
-                go get github.com/golang/dep/cmd/dep
-              fi
-              dep ensure
-            fi
-      - run:
-          name: test
-          command: make test
+      - run: make test
