@@ -73,6 +73,14 @@ func TestApplyPatchUsers(t *testing.T) {
 			},
 		},
 		{
+			"hoge",
+			Patch{Op: Add, Path: "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:employeeNumber", Value: "92052"},
+			func(r *Resource, err error) {
+				assert.Nil(t, err)
+				assert.Equal(t, "92052", r.GetData()["employeeNumber"])
+			},
+		},
+		{
 			"add multivalued",
 			Patch{Op: Add, Path: "emails", Value: map[string]interface{}{"value": "foo@bar.com"}},
 			func(r *Resource, err error) {
@@ -316,7 +324,7 @@ func TestApplyPatchGroup(t *testing.T) {
 						],
 						"Operations": [{
 							"op": "Add",
-							"path": "members", 
+							"path": "members",
 							"value": [{
 								"$ref": null,
 								"value": "added_member_id"
